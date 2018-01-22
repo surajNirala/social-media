@@ -231,7 +231,7 @@ class UserController extends Controller
     {
         //return $this->user::findOrfail($id);
 
-        return $request;
+        return $request."test";
     }
 
     /**
