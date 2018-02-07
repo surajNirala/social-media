@@ -11,7 +11,7 @@ $factory->define(App\Model\Post::class, function (Faker $faker) {
 		    },*/
 		'user_id'	   => $faker->randomElement(App\User::pluck('id')->toArray()),  
         'post_content' => $faker->text($maxNbChars = 250),
-        'post_file'	   => $faker->image('public/post_images',400,300),
+        'post_file'	   => $faker->image(('public/post_images'),400,300),
         'like'		   => $faker->randomDigit,
         'dislike'	   => $faker->randomDigit,
     ];

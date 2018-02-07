@@ -15,7 +15,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'first_name','last_name','profile_image','cover_image', 'email', 'password','dop','city','country','status','role'
+        'first_name','last_name','email', 'password','dop','gender','status','role'
     ];
     public $timestamps = true;
 
@@ -27,4 +27,13 @@ class User extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+
+    public function profiles()
+    {
+        return $this->hasOne('App\Model\Profile','user_id');
+    }
+    public function posts()
+    {
+        return $this->hasMany('App\Model\Post','user_id');
+    }
 }

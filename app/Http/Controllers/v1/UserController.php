@@ -8,65 +8,61 @@ use App\Http\Controllers\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\UserResource;
+use App\Http\Helper\userhelper as helper;
+use App\Http\Helper\UserTransformHelper as userDetailsTransformer;
 use App\User;
+use App\Model\Profile;
+use App\Model\Post;
+use Illuminate\Support\Facades\Input;
 use JWTAuthException;
 use JWTAuth;
+use URL;
 
 class UserController extends Controller
 {
+   
+   use helper,userDetailsTransformer;
+
     private $user;
 
     public function __construct(User $user){
         $this->user = $user;
     }
+    /*
 
-    protected function validatorLogin(array $data)
-    {
-      return Validator::make($data, [
-            'email' => 'required|string|email|max:255',
-            'password' => 'required',
-        ]);
-    }
-    protected function validatorRegister(array $data)
-    {
-        return Validator::make($data, [
-            'first_name'    => 'required|string|max:255',
-            'last_name'     => 'required|string|max:255',
-            'email'         => 'required|string|email|max:255|unique:users',
-            'password'      => 'required|string|min:6|confirmed',
-            'dop'           => 'required|max:255',
-            'gender'        => 'required|max:255',
-        ]);
-    }
+   Error:-- "Cannot redeclare App\Http\Controllers\v1\UserController::__construct()"
+
+    public function __construct(Profile $profile){
+        $this->profile = $profile;
+    }*/
 
     public function register(Request $request)
     {   
-        return $request->all();die;
+       // return $request->all();die;
         $validatorRegister = $this->validatorRegister($request->all());
         if ($validatorRegister->fails()) 
             {
                 $messages = $validatorRegister->messages();
                 $response = [
-                    'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
-                    'error' => true,
-                    'result'=>false ,
-                    'message' => $messages,
-                    'data'=> []
+                    'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                    'error'     => true,
+                    'result'    =>false ,
+                    'message'   => $messages,
+                    'data'      => []
                 ];
                 return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
+        }else{
 
-        else{
-        //return $request->all();die;
+        $user = [
+          'first_name' => $request->get('first_name')       ? $request->get('first_name')           : '' ,
+          'last_name'  => $request->get('last_name')        ? $request->get('last_name')            : '',
+          'email'      => $request->get('email')            ? $request->get('email')                : '',
+          'password'   => $request->get('password')         ? bcrypt($request->get('password'))     : '',
+          'dop'        => $request->get('dop')              ? $request->get('dop')                  : '',
+          'gender'     => $request->get('gender') == 'male' ? '1'                                   : '2',  
+        ];
 
-        $user = $this->user->create([
-          'first_name' => $request->get('first_name'),
-          'last_name'  => $request->get('last_name'),
-          'email'      => $request->get('email'),
-          'password'   => bcrypt($request->get('password')),
-          'dop'        => $request->get('dop'),
-          'gender'     => $request->get('gender'),     
-        ]);
+        $this->user->create($user);
 
         $response = [
             'status'    => Response::HTTP_CREATED,
@@ -86,11 +82,11 @@ class UserController extends Controller
             if ($validator->fails()) {
                 $messages = $validator->messages();
                 $response = [
-                    'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
-                    'error' => true,
-                    'result'=>false ,
-                    'message' => $messages,
-                    'data'=> []
+                    'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                    'error'     => true,
+                    'result'    =>false ,
+                    'message'   => $messages,
+                    'data'      => []
                 ];
 
                 return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -108,73 +104,143 @@ class UserController extends Controller
         try {
            if (!$token = JWTAuth::attempt($credentials)) {
             $response = [
-                'status' => Response::HTTP_UNAUTHORIZED,
-                'error' => true,
-                'result'=>false ,
-                /*'message' => 'Invalid Credentials. Please make sure you entered the right information and you have verified your email address.',*/
-                'message' => 'Invalid Credentials.Please make sure you entered the right information.',
-                'data'=> []
+                'status'    => Response::HTTP_UNAUTHORIZED,
+                'error'     => true,
+                'result'    =>false ,
+                'message'   => 'Invalid Credentials.Please make sure you entered the right information.',
+                'data'      => []
                 ];
             return response()->json($response, Response::HTTP_UNAUTHORIZED);
            }
         } catch (JWTAuthException $e) {
           $response = [
-                    'status' => Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'error' => true,
-                    'result'=>false ,
-                    'message' => 'failed_to_create_token',
-                    'data'=> []
+                    'status'   => Response::HTTP_INTERNAL_SERVER_ERROR,
+                    'error'    => true,
+                    'result'   =>false ,
+                    'message'  => 'failed_to_create_token',
+                    'data'     => []
                 ];
             return response()->json($response, Response::HTTP_INTERNAL_SERVER_ERROR);
         }
         return response()->json([
-                 "status"    => Response::HTTP_OK,
+                   "status"    => Response::HTTP_OK,
                    "result"    => true,
                    "error"     => false,
-                 "msg"       => "Login successfully",
-                 "data"      => $this->transform($user,$token)
+                   "msg"       => "Login successfully",
+                   "data"      => $this->transform($user,$token)
         ],Response::HTTP_OK);
         }
         }
     }
  }
 
-  public function transform($user,$token)
-  {
-    $tmp = array();
-
-    foreach ($user as $value) {
-      $tmp = [
-
-          "first_name"      => $value->first_name,
-          "last_name"       => $value->last_name,
-          "username"        => $value->username,
-          "email"           => $value->email,
-          "role"            => $value->role,
-          "status"          => $value->status,
-          "token"           => $token,
-
-      ];
-    }
-    return $tmp;
-  }
+  
 
    /* public function getAuthUser(Request $request)
     {
         $user = JWTAuth::toUser($request->token);
         return response()->json(['result' => $user]);
     }*/
-
+    public function image($filename)
+    {
+        return $filename;
+    }
     public function index(Request $request)
     {
-        $token     = $request->header('token');
-        $user      = JWTAuth::toUser($token);
-        $id        =  $user->id;
-        $userDetails = $this->user::where('id',$id)->get();
+        $token       = $request->header('token');
+        $user        = JWTAuth::toUser($token);
+        $user_id     = $user->id;
 
-        $userDetail  = UserResource::collection($userDetails);
+        /*$ip= \Request::ip();
+    $data = \Location::get($ip);
+    return $data;*/
+        
+       /* $userDetails = $this->user::find($user_id);
+        $userDetail  = new UserResource($userDetails,$profile);*/
+        
 
-        return $userDetail;
+        // tranform---
+        $userDetails = $this->user::where('id',$user_id)->get();
+
+        $posts = Post::where('user_id',$user_id)->paginate(2);
+        
+        $forAddfriend = $this->user::paginate(2);
+        
+
+        if($userDetails->isEmpty())
+        {
+            $response    = [
+            "status"      => Response::HTTP_BAD_REQUEST,
+            "error"       => false,
+            "result"      => true,
+            "message"     => "No Exists Any User",
+            "data"        => [],
+        ];
+        return response()->json($response,Response::HTTP_BAD_REQUEST);
+        }
+
+
+       if($posts->isEmpty() && $forAddfriend->isEmpty())
+        {
+            $userDetailAndPost   = $this->withoutPostandAddfrienduserDetailTransformer($userDetails);
+            $response    = [
+                "status"      => Response::HTTP_OK,
+                "error"       => false,
+                "result"      => true,
+                "message"     => "User Details",
+                "data"        => $userDetailAndPost,
+            ];
+
+        return response()->json($response,Response::HTTP_OK); 
+        }
+        // posts mein array [] aa rha tha ishiliye isEmpty wala function use kiya h 
+        if($forAddfriend->isEmpty())
+        {
+            $userDetailAndPost   = $this->withoutAddfrienduserDetailTransformer($userDetails,$posts);
+            $response    = [
+                "status"      => Response::HTTP_OK,
+                "error"       => false,
+                "result"      => true,
+                "message"     => "User Details and All posts",
+                "data"        => $userDetailAndPost,
+            ];
+
+        return response()->json($response,Response::HTTP_OK); 
+        }
+
+        if($posts->isEmpty())
+        {
+
+     $userDetailAndFriend   = $this->withoutPostuserDetailTransformer($userDetails,$forAddfriend);
+
+            $response    = [
+            "status"      => Response::HTTP_OK,
+            "error"       => false,
+            "result"      => true,
+            "message"     => "User Details  and Add friend",
+            "data"        => $userDetailAndFriend,
+        ];
+        return response()->json($response,Response::HTTP_OK); 
+
+        }else{
+
+        $userDetail   = $this->userDetailTransformer($userDetails,$posts,$forAddfriend);
+
+        $response    = [
+            "status"      => Response::HTTP_OK,
+            "error"       => false,
+            "result"      => true,
+            "message"     => "User Details,posts And addfriends",
+            "data"        => $userDetail,
+            "Ip Address"  => $ipadress,
+            //"profile"     => url('/')."/social/".($profile->profile_image),
+            //"profile"     => route("/social/",'suraj')
+           // storage_path
+        ];
+
+        return response()->json($response,Response::HTTP_OK);
+        }
+
     }
 
     /**
@@ -195,7 +261,23 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        return $request->all();
+        $userdata = $request->isMethod('put') ? $this->user::findOrfail($request->id) : new $this->user;
+
+        $request->name; /// like that data 
+
+        $fileExtension      =  $request->file('image')->getClientOriginalExtension();
+        $fileName           = time(). '.' .$request->file('image')->getClientOriginalName();
+        $fromtmp            = $request->file('image');
+        $destinationPath    = public_path('images/');
+
+   //return $destinationPath;die;
+        // This will store only the filename. Update with full path if you like
+
+        //$post->image = $filename; 
+
+        $uploadSuccess      = $fromtmp->move($destinationPath, $fileName);
+
+        return "image uploaded successfully";
     }
 
     /**
@@ -229,10 +311,65 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //return $this->user::findOrfail($id);
+       //return $request;die;
+        $token =  $request->header('token');
 
-        return $request."test";
+        $user = JWTAuth::touser($token);
+
+        $userID =  $user->id; 
+
+      $validatorUpdate = $this->validatorUpdate($request->all());
+
+      if($validatorUpdate->fails())
+      {
+        $message = $validatorUpdate->messages();
+        $response = [
+
+            "status"      => Response::HTTP_UNPROCESSABLE_ENTITY,
+            "error"       => false,
+            "result"      => true,
+            "message"     => $message,
+            "data"        => [],
+        ];
+        return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+      }else{
+
+      $userDetail =  $this->user::where('id',$userID)
+                                    ->where('id',$id)
+                                    ->first();
+
+        /*$first_name  = $userDetail->first_name.'Text';
+        $last_name  = $userDetail->last_name.'Text';
+        $nrRand = str_random(60);*/
+
+        if($userDetail=='')
+        {
+            $response = [
+                "status"    => Response::HTTP_BAD_REQUEST,
+                "error"     => false,
+                "result"    => true,
+                "messages"  => "No Exists User.",
+                "data"      =>  [],   
+            ];
+            return response()->json($response,Response::HTTP_BAD_REQUEST);
+        }else{
+
+           $userDetails =  $userDetail->where('id',$userID )
+                                   ->where('id',$id)
+                                   ->update($request->all());
+
+        $response = [
+
+            "status"      => Response::HTTP_CREATED,
+            "error"       => false,
+            "result"      => true,
+            "message"     => "user Update successfully.",
+            "data"        => $request->all(),
+        ];
+        return response()->json($response, Response::HTTP_CREATED); 
+        }
     }
+}
 
     /**
      * Remove the specified resource from storage.
@@ -243,5 +380,10 @@ class UserController extends Controller
     public function destroy($id)
     {
         //
+    }
+
+    public function profilepic(Request $request)
+    {
+        return "image here..";
     }
 }

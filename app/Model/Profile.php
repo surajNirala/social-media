@@ -4,9 +4,9 @@ namespace App\Model;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Post extends Model
+class Profile extends Model
 {
-    public function users()
+     public function users()
     {
         return $this->belongsTo('App\User','id');
     }
