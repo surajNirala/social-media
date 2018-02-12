@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers\v1;
 
-use Illuminate\Http\Request;
+use URL;
+use App\User;
+use JWTAuth;
+use App\Model\Post;
+use JWTAuthException;
+use App\Model\Profile;
 use App\Http\Requests;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Input;
 use App\Http\Controllers\Controller;
-use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\UserResource;
 use App\Http\Helper\userhelper as helper;
+use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\Response;
 use App\Http\Helper\UserTransformHelper as userDetailsTransformer;
-use App\User;
-use App\Model\Profile;
-use App\Model\Post;
-use Illuminate\Support\Facades\Input;
-use JWTAuthException;
-use JWTAuth;
-use URL;
 
 class UserController extends Controller
 {
@@ -25,23 +25,17 @@ class UserController extends Controller
 
     private $user;
 
-    public function __construct(User $user){
+    public function __construct(User $user, Post $post){
         $this->user = $user;
+        $this->post = $post;
     }
-    /*
-
-   Error:-- "Cannot redeclare App\Http\Controllers\v1\UserController::__construct()"
-
-    public function __construct(Profile $profile){
-        $this->profile = $profile;
-    }*/
 
     public function register(Request $request)
     {   
        // return $request->all();die;
         $validatorRegister = $this->validatorRegister($request->all());
         if ($validatorRegister->fails()) 
-            {
+        {
                 $messages = $validatorRegister->messages();
                 $response = [
                     'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
@@ -51,9 +45,8 @@ class UserController extends Controller
                     'data'      => []
                 ];
                 return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }else{
-
-        $user = [
+        }
+        $save = [
           'first_name' => $request->get('first_name')       ? $request->get('first_name')           : '' ,
           'last_name'  => $request->get('last_name')        ? $request->get('last_name')            : '',
           'email'      => $request->get('email')            ? $request->get('email')                : '',
@@ -61,8 +54,15 @@ class UserController extends Controller
           'dop'        => $request->get('dop')              ? $request->get('dop')                  : '',
           'gender'     => $request->get('gender') == 'male' ? '1'                                   : '2',  
         ];
-
-        $this->user->create($user);
+        
+        if($this->user->create($save)){
+          $user = [
+          'first_name' => $request->get('first_name')       ? $request->get('first_name')           : '' ,
+          'last_name'  => $request->get('last_name')        ? $request->get('last_name')            : '',
+          'email'      => $request->get('email')            ? $request->get('email')                : '',
+          'dop'        => $request->get('dop')              ? $request->get('dop')                  : '',
+          'gender'     => $request->get('gender') == 'male' ? 'male'                                : 'female',  
+        ];
 
         $response = [
             'status'    => Response::HTTP_CREATED,
@@ -72,84 +72,121 @@ class UserController extends Controller
             'data'      => $user
         ];
         return response()->json($response,Response::HTTP_CREATED);
+
+        }else{
+          $response = [
+            'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+            'result'    => true,
+            'error'     => false,
+            'message'   =>'Registraton is not successfully please try again later.',
+            'data'      => []
+        ];
+        return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+       
+        
     }
-}
 
-        public function login(Request $request){
+   public function login(Request $request)
+   {
+      $validator = $this->validatorLogin($request->all());
 
-          $validator = $this->validatorLogin($request->all());
-
-            if ($validator->fails()) {
-                $messages = $validator->messages();
-                $response = [
-                    'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
-                    'error'     => true,
-                    'result'    =>false ,
-                    'message'   => $messages,
-                    'data'      => []
-                ];
-
-                return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-            }else{
-
-            $email = $request->email;
-
-            if($user = $this->user::where('email',$email)->get())
-                {
-
-        $credentials = $request->only('email', 'password');
-        {
-       // return $credentials; die;
-        $token = null;
-        try {
-           if (!$token = JWTAuth::attempt($credentials)) {
+        if ($validator->fails()) {
+            $messages = $validator->messages();
             $response = [
-                'status'    => Response::HTTP_UNAUTHORIZED,
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
                 'error'     => true,
                 'result'    =>false ,
-                'message'   => 'Invalid Credentials.Please make sure you entered the right information.',
+                'message'   => $messages,
                 'data'      => []
-                ];
-            return response()->json($response, Response::HTTP_UNAUTHORIZED);
-           }
-        } catch (JWTAuthException $e) {
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        $email = $request->email;
+
+        if($user = $this->user::where('email',$email)->get())
+        {
+
+          $credentials = $request->only('email', 'password');
+          {
+         // return $credentials; die;
+          $token = null;
+          try {
+             if (!$token = JWTAuth::attempt($credentials)) {
+              $response = [
+                  'status'    => Response::HTTP_UNAUTHORIZED,
+                  'error'     => true,
+                  'result'    =>false ,
+                  'message'   => 'Invalid Credentials.Please make sure you entered the right information.',
+                  'data'      => []
+                  ];
+              return response()->json($response, Response::HTTP_UNAUTHORIZED);
+             }
+          } catch (JWTAuthException $e) {
+            $response = [
+                      'status'   => Response::HTTP_INTERNAL_SERVER_ERROR,
+                      'error'    => true,
+                      'result'   =>false ,
+                      'message'  => 'failed_to_create_token',
+                      'data'     => []
+                  ];
+              return response()->json($response, Response::HTTP_INTERNAL_SERVER_ERROR);
+          }
+            return response()->json([
+                       "status"    => Response::HTTP_OK,
+                       "result"    => true,
+                       "error"     => false,
+                       "msg"       => "Login successfully",
+                       "data"      => $this->loginTransform($user,$token)
+            ],Response::HTTP_OK);
+          }
+        }
+    }
+   public function logout(Request $request) {
+
+    $token =  $request->header('token');
+     // $validateLogout = $this->validateLogout($request->all());
+
+        if ($token == '') {
+            $response = [
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'error'     => true,
+                'result'    => false ,
+                'message'   => "The Token is required",
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        try {
+            JWTAuth::invalidate($token);
+            $response = [
+              'status'    => Response::HTTP_OK,
+              'error'     => true,
+              'result'    => false,
+              'message'   => 'Logout successfully.',
+              'data'      => [],
+            ];
+            return response()->json($response,Response::HTTP_OK);
+        } catch (JWTException $e) {
+            // something went wrong whilst attempting to encode the token
           $response = [
-                    'status'   => Response::HTTP_INTERNAL_SERVER_ERROR,
-                    'error'    => true,
-                    'result'   =>false ,
-                    'message'  => 'failed_to_create_token',
-                    'data'     => []
-                ];
-            return response()->json($response, Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-        return response()->json([
-                   "status"    => Response::HTTP_OK,
-                   "result"    => true,
-                   "error"     => false,
-                   "msg"       => "Login successfully",
-                   "data"      => $this->transform($user,$token)
-        ],Response::HTTP_OK);
-        }
+             'status'     => Response::HTTP_INTERNAL_SERVER_ERROR,
+             'error'      => true,
+             'result'     => false,
+             'message'    => 'Failed to logout, please try again.', 
+          ];
+            return response()->json($response,Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
- }
 
-  
-
-   /* public function getAuthUser(Request $request)
-    {
-        $user = JWTAuth::toUser($request->token);
-        return response()->json(['result' => $user]);
-    }*/
-    public function image($filename)
-    {
-        return $filename;
-    }
     public function index(Request $request)
     {
         $token       = $request->header('token');
         $user        = JWTAuth::toUser($token);
         $user_id     = $user->id;
+
 
         /*$ip= \Request::ip();
     $data = \Location::get($ip);
@@ -162,11 +199,14 @@ class UserController extends Controller
         // tranform---
         $userDetails = $this->user::where('id',$user_id)->get();
 
-        $posts = Post::where('user_id',$user_id)->paginate(2);
+        $posts = $this->post::where('user_id',$user_id)->paginate(2);
         
-        $forAddfriend = $this->user::paginate(2);
+        $forAddfriend = $this->user::where('id','!=',$user_id)->paginate(15);
         
 
+       // $allData = $this->post->where('user_id', 1)->with('users')->paginate(3)->toArray();
+
+       // return $allData;
         if($userDetails->isEmpty())
         {
             $response    = [
@@ -232,7 +272,7 @@ class UserController extends Controller
             "result"      => true,
             "message"     => "User Details,posts And addfriends",
             "data"        => $userDetail,
-            "Ip Address"  => $ipadress,
+            //"Ip Address"  => $ipadress,
             //"profile"     => url('/')."/social/".($profile->profile_image),
             //"profile"     => route("/social/",'suraj')
            // storage_path
@@ -261,7 +301,7 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $userdata = $request->isMethod('put') ? $this->user::findOrfail($request->id) : new $this->user;
+        /*$userdata = $request->isMethod('put') ? $this->user::findOrfail($request->id) : new $this->user;
 
         $request->name; /// like that data 
 
@@ -275,9 +315,9 @@ class UserController extends Controller
 
         //$post->image = $filename; 
 
-        $uploadSuccess      = $fromtmp->move($destinationPath, $fileName);
+        $uploadSuccess      = $fromtmp->move($destinationPath, $fileName);*/
 
-        return "image uploaded successfully";
+        return "this is store data";
     }
 
     /**
@@ -286,9 +326,36 @@ class UserController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request,$id)
     {
-        return "suraj".$id;
+        $token            = $request->header('token');
+        $user             = JWTAuth::toUser($token);
+        $user_id          = $user->id;
+        $userdetail       = $this->user::where('id',$id)
+                            ->where('id',$user_id)
+                                         ->get();
+        $singleUserdetail = $this->withoutPostandAddfrienduserDetailTransformer($userdetail); 
+        if($userdetail->isEmpty()){
+            $response = [
+               'status'  => Response::HTTP_BAD_REQUEST,
+               'error'   => false,
+               'result'  => true,
+               'message' => "No Exists user",
+               'data'    => [],
+            ];
+            return response()->json($response,Response::HTTP_BAD_REQUEST);
+        }else{
+            $response = [
+              'status'     => Response::HTTP_OK,
+              'error'      => false,
+              'result'     => true,
+              'message'    => "user Details",  
+              'data'       => $singleUserdetail, 
+            ];
+            return response()->json($response,Response::HTTP_OK);
+          }                                
+        
+        
     }
 
     /**
@@ -311,12 +378,11 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-       //return $request;die;
         $token =  $request->header('token');
 
         $user = JWTAuth::touser($token);
 
-        $userID =  $user->id; 
+        $user_id =  $user->id; 
 
       $validatorUpdate = $this->validatorUpdate($request->all());
 
@@ -332,17 +398,12 @@ class UserController extends Controller
             "data"        => [],
         ];
         return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-      }else{
+      }
 
-      $userDetail =  $this->user::where('id',$userID)
-                                    ->where('id',$id)
-                                    ->first();
-
-        /*$first_name  = $userDetail->first_name.'Text';
-        $last_name  = $userDetail->last_name.'Text';
-        $nrRand = str_random(60);*/
-
-        if($userDetail=='')
+      $userDetail =  $this->user::where('id',$user_id)
+                                     ->where('id',$id)
+                                               ->get();
+        if($userDetail->isEmpty())
         {
             $response = [
                 "status"    => Response::HTTP_BAD_REQUEST,
@@ -352,12 +413,10 @@ class UserController extends Controller
                 "data"      =>  [],   
             ];
             return response()->json($response,Response::HTTP_BAD_REQUEST);
-        }else{
-
-           $userDetails =  $userDetail->where('id',$userID )
-                                   ->where('id',$id)
-                                   ->update($request->all());
-
+        }
+        $userDetails =  $userDetail->where('id',$user_id)
+                                        ->where('id',$id)
+                                ->update($request->all());
         $response = [
 
             "status"      => Response::HTTP_CREATED,
@@ -367,10 +426,7 @@ class UserController extends Controller
             "data"        => $request->all(),
         ];
         return response()->json($response, Response::HTTP_CREATED); 
-        }
     }
-}
-
     /**
      * Remove the specified resource from storage.
      *

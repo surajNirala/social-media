@@ -16,10 +16,10 @@ class ForAddFriendResource extends Resource
     {
         //return parent::toArray($request);
         return [
-            'first_name'    => $this->first_name                    ? $this->first_name                      : '',
-            'last_name'     => $this->last_name                     ? $this->last_name                       : '',
-            'gender'        => $this->gender == 1                   ? 'male'                                 : 'female',
-            'profile_image' => $this->profiles->profile_image       ? $this->profiles->profile_image         : '',
+            'first_name'    => $this->first_name                              ? $this->first_name                      : '',
+            'last_name'     => $this->last_name                               ? $this->last_name                       : '',
+            'gender'        => $this->gender == 1                             ? 'male'                                 : 'female',
+            'profile_image' => (!empty($this->profiles->profile_image))       ? (URL($this->profiles->profile_image))         : '',
         ];
     }
 }

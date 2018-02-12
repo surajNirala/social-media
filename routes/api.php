@@ -25,8 +25,10 @@ Route::group(['prefix'=>'v1'],function()
 	Route::post('register', 'v1\UserController@register');
 	Route::post('login', 'v1\UserController@login');
 	Route::group(['middleware' => 'jwt.auth'],function(){
-		Route::apiResource('socials',                 'v1\UserController');
-		Route::post('profilepic',                   'v1\UserController@profilepic');
+		Route::apiResource('socials',                 		'v1\UserController');
+		Route::post('profilepic',                   		'v1\UserController@profilepic');
+		Route::post('cover_profilepic',                   	'v1\UserController@cover_profilepic');
+		Route::get('logout',                                'v1\UserController@logout');
 	});
 });
 

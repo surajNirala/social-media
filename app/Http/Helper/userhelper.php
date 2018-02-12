@@ -36,4 +36,10 @@ trait userhelper
 	            //'gender'        => 'required|max:255',
 	        ]);
 	}
+	/*protected function validateLogout(array $data)
+	{
+		return Validator::make($data,[
+			'token'            => 'required',
+		]);
+	}*/
 }

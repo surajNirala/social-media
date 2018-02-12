@@ -1,9 +1,9 @@
 <?php 
 
 namespace App\Http\Helper;
-use App\Http\Resources\ForAddFriendResource;
 use App\Http\Resources\PostResource;
-use URL;
+use App\Http\Resources\ForAddFriendResource;
+
 Trait UserTransformHelper 
 {
   public function withoutPostuserDetailTransformer($userDetails,$ForAddfriend)
@@ -27,32 +27,48 @@ Trait UserTransformHelper
         'first_name'      => $value->first_name              ? $value->first_name                                : '',
         'last_name'       => $value->last_name               ? $value->last_name                                 : '',
         'Gender'          => $value->gender == 1             ? 'male'                                            :'female',
-        'mobile'          => (count($value->profiles)>0)     ? $value->profiles->mobile                          : '',
-        'username'        => (count($value->profiles)>0)     ? $value->profiles->username                        : '',
+        'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
+        'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
         'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
         'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
         'hours'           => $value->dop                     ? $hours                                            : '',
-        'city'            => (count($value->profiles) > 0)   ? $value->profiles->city                            : '',
-        'country'         => (count($value->profiles) > 0)   ? $value->profiles->country                         : '',
-        'profile_image'   => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->profile_image)    : '',
-        'cover_image'     => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->cover_image)      : '',
+        'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
+        'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
+        'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
+        'cover_image'     => (! empty ($value->profiles))    ? url('social/'.$value->profiles->cover_image)      : '',
         'status'          => $value->status                  ? $value->status                                    : '',
         'role'            => $value->role                    ? $value->role                                      : '',   
         'created_at'      => $value->created_at              ? date('h:i A, d F,Y',strtotime($value->created_at)): '',   
         'updated_at'      => $value->updated_at              ? date('h:i A,d F Y',strtotime($value->updated_at)) : '',
         'posts'           => []                              ? []                                                : [],
-        'ForAddFriend'    => ForAddFriendResource::collection($ForAddfriend)/*$this->AddFriendTransform($ForAddfriend)*/,
-        'AddfriendPagination'=> $this->addfriendpagination($ForAddfriend),
+        'forAddFriend'    => ForAddFriendResource::collection($ForAddfriend),
+        'addfriendPagination'=> $this->addfriendpagination($ForAddfriend),
        ];
      }
      return $tmp;
   }
+
   public function addfriendpagination($ForAddfriend)
   {
       $tmp = array();
 
-      foreach ($ForAddfriend as $value) {
+      $data =  $ForAddfriend->toArray();
+
+      $tmp = [
+        "first_page_url" => $data['first_page_url'],
+        "from"           => $data['from'],
+        "last_page"      => $data['last_page'],
+        "last_page_url"  => $data['last_page_url'],
+        "next_page_url"  => $data['next_page_url'],
+        "path"           => $data['path'],
+        "per_page"       => $data['per_page'],
+        "prev_page_url"  => $data['prev_page_url'],
+        "to"             => $data['to'],
+        "total"          => $data['total']
+      ];
+ 
+      /*foreach ($ForAddfriend as $value) {
         $tmp = [
             "first_page_url"  => URL::current()."?page=1",
             "from"            =>  1,
@@ -66,7 +82,7 @@ Trait UserTransformHelper
             "total"           =>  7
 
         ];
-      }
+      }*/
       return $tmp;
   }
 
@@ -91,26 +107,27 @@ Trait UserTransformHelper
         'first_name'      => $value->first_name              ? $value->first_name                                : '',
         'last_name'       => $value->last_name               ? $value->last_name                                 : '',
         'Gender'          => $value->gender == 1             ? 'male'                                            :'female',
-        'mobile'          => (count($value->profiles)>0)     ? $value->profiles->mobile                          : '',
-        'username'        => (count($value->profiles)>0)     ? $value->profiles->username                        : '',
+        'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
+        'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
         'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
         'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
         'hours'           => $value->dop                     ? $hours                                            : '',
-        'city'            => (count($value->profiles) > 0)   ? $value->profiles->city                            : '',
-        'country'         => (count($value->profiles) > 0)   ? $value->profiles->country                         : '',
-        'profile_image'   => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->profile_image)    : '',
-        'cover_image'     => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->cover_image)      : '',
+        'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
+        'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
+        'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
+        'cover_image'     => (! empty ($value->profiles))    ? url('social/'.$value->profiles->cover_image)      : '',
         'status'          => $value->status                  ? $value->status                                    : '',
         'role'            => $value->role                    ? $value->role                                      : '',   
         'created_at'      => $value->created_at              ? date('h:i A, d F,Y',strtotime($value->created_at)): '',   
         'updated_at'      => $value->updated_at              ? date('h:i A,d F Y',strtotime($value->updated_at)) : '',
-        'Posts'           => $this->PostTransform($posts),
-        'Addfriend'       => [],
+        'posts'           => $this->PostTransform($posts),
+        'addfriend'       => [],
        ];
      }
      return $tmp;
   }
+
   public function withoutPostandAddfrienduserDetailTransformer($userDetails)
   {
       $tmp = array();
@@ -132,16 +149,16 @@ Trait UserTransformHelper
         'first_name'      => $value->first_name              ? $value->first_name                                : '',
         'last_name'       => $value->last_name               ? $value->last_name                                 : '',
         'Gender'          => $value->gender == 1             ? 'male'                                            :'female',
-        'mobile'          => (count($value->profiles)>0)     ? $value->profiles->mobile                          : '',
-        'username'        => (count($value->profiles)>0)     ? $value->profiles->username                        : '',
+        'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
+        'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
         'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
         'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
         'hours'           => $value->dop                     ? $hours                                            : '',
-        'city'            => (count($value->profiles) > 0)   ? $value->profiles->city                            : '',
-        'country'         => (count($value->profiles) > 0)   ? $value->profiles->country                         : '',
-        'profile_image'   => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->profile_image)    : '',
-        'cover_image'     => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->cover_image)      : '',
+        'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
+        'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
+        'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
+        'cover_image'     => (! empty ($value->profiles))    ? url('social/'.$value->profiles->cover_image)      : '',
         'status'          => $value->status                  ? $value->status                                    : '',
         'role'            => $value->role                    ? $value->role                                      : '',   
         'created_at'      => $value->created_at              ? date('h:i A, d F,Y',strtotime($value->created_at)): '',   
@@ -150,6 +167,7 @@ Trait UserTransformHelper
      }
      return $tmp;
   }
+
 	public function userDetailTransformer($userDetails,$posts,$ForAddfriend)
 	{
 
@@ -172,79 +190,64 @@ Trait UserTransformHelper
         'first_name'      => $value->first_name              ? $value->first_name                                : '',
         'last_name'       => $value->last_name               ? $value->last_name                                 : '',
         'Gender'          => $value->gender == 1             ? 'male'                                            :'female',
-        'mobile'          => (count($value->profiles)>0)     ? $value->profiles->mobile                          : '',
-        'username'        => (count($value->profiles)>0)     ? $value->profiles->username                        : '',
+        'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
+        'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
         'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
         'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
         'hours'           => $value->dop                     ? $hours                                            : '',
-        'city'            => (count($value->profiles) > 0)   ? $value->profiles->city                            : '',
-        'country'         => (count($value->profiles) > 0)   ? $value->profiles->country                         : '',
-        'profile_image'   => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->profile_image)    : '',
-        'cover_image'     => (count($value->profiles) > 0)   ? url('social/'.$value->profiles->cover_image)      : '',
+        'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
+        'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
+        'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
+        'cover_image'     => (! empty ($value->profiles))    ? url('social/'.$value->profiles->cover_image)      : '',
         'status'          => $value->status                  ? $value->status                                    : '',
         'role'            => $value->role                    ? $value->role                                      : '',   
         'created_at'      => $value->created_at              ? date('h:i A, d F,Y',strtotime($value->created_at)): '',   
         'updated_at'      => $value->updated_at              ? date('h:i A,d F Y',strtotime($value->updated_at)) : '',
-        'Posts'		  	    => PostResource::collection($posts),
-        'ForPostpaginations'=> $this->PostTransform($posts),
-        'ForAddFriend'	  => ForAddFriendResource::collection($ForAddfriend)/*$this->AddFriendTransform($ForAddfriend)*/,
-        'AddfriendPagination'=> $this->addfriendpagination($ForAddfriend),
+        'posts'		  	    => PostResource::collection($posts),
+        'forPostpaginations'=> $this->PostTransform($posts),
+        'forAddFriend'	  => ForAddFriendResource::collection($ForAddfriend),
+        'addfriendPagination'=> $this->addfriendpagination($ForAddfriend),
    		 ];
 	   }
 	   return $tmp;
-  	}
+  }
 
-  	public function PostTransform($posts)
-  	{
+  public function PostTransform($posts)
+  {
   		$tmp = array();
 
-  		foreach ($posts as $value) {
-  			$tmp = [
-  				  "first_page_urll"         =>  URL::current()."?page=1",
-            "from"                    =>  1,
-            "last_page"               =>  5,
-            "last_page_url"           => URL::current()."?page=5",
-            "next_page_url"           => URL::current()."?page=2",
-            "path"                    => URL::current()."",
-            "per_page"                =>  2,
-            "prev_page_url"           =>  null,
-            "to"                      =>  2,
-            "total"                   =>  10,
-           // "links"           =>$value->links()
-  			];
-  		}
+      $data =  $posts->toArray();
+
+      $tmp = [
+        "first_page_url" => $data['first_page_url'],
+        "from"           => $data['from'],
+        "last_page"      => $data['last_page'],
+        "last_page_url"  => $data['last_page_url'],
+        "next_page_url"  => $data['next_page_url'],
+        "path"           => $data['path'],
+        "per_page"       => $data['per_page'],
+        "prev_page_url"  => $data['prev_page_url'],
+        "to"             => $data['to'],
+        "total"          => $data['total']
+      ];
   		return $tmp;
-  	}
+  }
 
-  	public function AddFriendTransform($ForAddfriend)
-  	{
-  		$tmp = array();
-  		foreach ($ForAddfriend as $value) {
-  		$tmp = [
-  			'id'			=>  $value->id							? $value->id 							: '',
-  			'first_name'	=>  $value->first_name					? $value->first_name					: '',
-  			'last_name'		=>  $value->last_name					? $value->last_name 					: '',
-  			'gender'		=>  $value->gender						? $value->gender						: '',
-  			'profile_image' =>  $value->profiles->profile_image		? $value->profiles->profile_image 		: '',
-  		];
-       }
-
-       return $tmp;
-  	}
-
-  	public function transform($user,$token)
+  public function loginTransform($user,$token)
 	{
-	    $tmp = array();
 
+	    $tmp = array();
+      //Trying to get property 'id' of non-object show error without foreach loop
 	    foreach ($user as $value) {
 	    $tmp = [
-	      "first_name"    => $value->first_name      ? $value->first_name     : '',
-	      "last_name"     => $value->last_name		 ? $value->last_name	  : '',
-	      "username"      => $value->username		 ? $value->username       : '',
-	      "email"         => $value->role		 	 ? $value->role 		  : '',
-	      "status"        => $value->status		     ? $value->status 		  : '',
-	      "token"         => $token				     ? $token				  : ''
+        "id"            => $value->id,
+	      "first_name"    => $value->first_name,
+        "last_name"     => $value->last_name,
+        "email"         => $value->email,
+        "dop"           => $value->dop,
+        "token"         => $token,
+	      
 	      ];
 	  
 	    }

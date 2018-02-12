@@ -10,4 +10,10 @@ class Post extends Model
     {
         return $this->belongsTo('App\User','id');
     }
+    public function profiles()
+    {
+        return $this->belongsTo('App\Model\Profile','user_id');
+    }
+    
+
 }
