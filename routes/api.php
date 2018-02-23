@@ -22,7 +22,10 @@ Route::apiResource('users','v1\UserController');
 //------------------------- for authorization -----------------------
 Route::group(['prefix'=>'v1'],function()
 {
-	Route::post('register', 'v1\UserController@register');
+	Route::post('register', 					'v1\UserController@register'); 
+	Route::get('verify/{verification_code}',    'v1\UserController@verifyUser');
+	Route::post('recover',						'v1\UserController@recover');
+	Route::post('resetpassword',                'v1\UserController@reset_password');
 	Route::post('login', 'v1\UserController@login');
 	Route::group(['middleware' => 'jwt.auth'],function(){
 		Route::apiResource('socials',                 		'v1\UserController');
@@ -30,5 +33,6 @@ Route::group(['prefix'=>'v1'],function()
 		Route::post('cover_profilepic',                   	'v1\UserController@cover_profilepic');
 		Route::get('logout',                                'v1\UserController@logout');
 	});
+	Route::get('emailSend','mailController@send');
 });
 

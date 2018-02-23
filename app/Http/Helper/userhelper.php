@@ -36,6 +36,17 @@ trait userhelper
 	            //'gender'        => 'required|max:255',
 	        ]);
 	}
+	protected function validatorRecover(array $data)
+	{
+		return Validator::make($data, [
+			'email'				=> 'required|string|email|max:255'
+		]);
+	}
+	protected function validatorResetPassword(array $data){
+		return Validator::make($data, [
+		'password'      => 'required|string|min:6|confirmed'
+		]);
+	}
 	/*protected function validateLogout(array $data)
 	{
 		return Validator::make($data,[

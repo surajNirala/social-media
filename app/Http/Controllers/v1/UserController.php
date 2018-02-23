@@ -4,11 +4,13 @@ namespace App\Http\Controllers\v1;
 
 use URL;
 use App\User;
+use Password;
 use JWTAuth;
 use App\Model\Post;
 use JWTAuthException;
 use App\Model\Profile;
 use App\Http\Requests;
+use App\User_verification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Input;
 use App\Http\Controllers\Controller;
@@ -17,6 +19,7 @@ use App\Http\Helper\userhelper as helper;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Helper\UserTransformHelper as userDetailsTransformer;
+use Mail;
 
 class UserController extends Controller
 {
@@ -25,9 +28,10 @@ class UserController extends Controller
 
     private $user;
 
-    public function __construct(User $user, Post $post){
+    public function __construct(User $user, Post $post,User_verification $user_verification){
         $this->user = $user;
         $this->post = $post;
+        $this->user_verification = $user_verification;
     }
 
     public function register(Request $request)
@@ -54,8 +58,22 @@ class UserController extends Controller
           'dop'        => $request->get('dop')              ? $request->get('dop')                  : '',
           'gender'     => $request->get('gender') == 'male' ? '1'                                   : '2',  
         ];
+        $name = $request->first_name;
+        $user = $this->user->create($save);
+        $userID = $user->id;
         
-        if($this->user->create($save)){
+        $verification_code = str_random(30);
+
+        $Token = $this->user_verification->create(['user_id' => $userID,'token' => $verification_code]);
+         
+        $verifiedLink =  Mail::send('email.verify',['name' => $name, 'verification_code' => $verification_code],function($message){
+            $subject  = "Please verify your email address.";
+            $email    = "suraj@yopmail.com";
+            $message->to($email)->subject($subject);
+            $message->from('suraj.nirala1995@gmail.com','surajNirala');
+          });
+          if($user && $Token){
+
           $user = [
           'first_name' => $request->get('first_name')       ? $request->get('first_name')           : '' ,
           'last_name'  => $request->get('last_name')        ? $request->get('last_name')            : '',
@@ -64,12 +82,19 @@ class UserController extends Controller
           'gender'     => $request->get('gender') == 'male' ? 'male'                                : 'female',  
         ];
 
+          $link = [
+
+                //'Link'=>route('verifyUser',$verification_code),
+                'Link'=>URL('api/v1/verify/'.$verification_code),
+          ];
+
         $response = [
-            'status'    => Response::HTTP_CREATED,
-            'result'    => true,
-            'error'     => false,
-            'message'   =>'User created successfully',
-            'data'      => $user
+            'status'           => Response::HTTP_CREATED,
+            'result'           => true,
+            'error'            => false,
+            'message'          =>'Thanks for signing up! Please check your email to complete your registration.',
+            'data'             => $user,
+            'Verificaton Link' => $link,
         ];
         return response()->json($response,Response::HTTP_CREATED);
 
@@ -86,7 +111,128 @@ class UserController extends Controller
        
         
     }
+    public function verifyUser($verifyUser){
 
+      $check = $this->user_verification::where('token',$verifyUser)->first();
+
+      if(!is_null($check)){
+
+        $user = $this->user::find($check->user_id);
+
+         if($user->is_verified == 1){
+            $response = [
+            'status'    => Response::HTTP_BAD_REQUEST,
+            'result'    => true,
+            'error'     => false,
+            'message'   =>'Account already verified..',
+            'data'      => []
+        ];
+         return response()->json($response,Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->update(['is_verified' => 1]);
+
+        $this->user_verification::where('token',$verifyUser)->delete();
+
+        $response = [
+          'status'   =>  Response::HTTP_OK,
+          'result'   =>  true,
+          'error'    =>  false,
+          'message'  =>  'You have successfully verified your email address.',
+        ];
+        return response()->json($response,Response::HTTP_OK);
+      }else{
+
+        $response = [
+          'status'   =>  Response::HTTP_BAD_REQUEST,
+          'result'   =>  true,
+          'error'    =>  false,
+          'message'  =>  'Verification code is invalid.',
+        ];
+        return response()->json($response,Response::HTTP_BAD_REQUEST);
+      }
+    }
+   public function recover(Request $request){
+
+    $validator = $this->validatorRecover($request->all()); 
+
+        if ($validator->fails()) {
+            $messages = $validator->messages();
+            $response = [
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'error'     => true,
+                'result'    =>false ,
+                'message'   => $messages,
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $email = $request->email;
+
+        $getEmail = $this->user::where('email',$email)->first();
+
+        if(!$getEmail){
+             $response = [
+                'status'    => Response::HTTP_UNAUTHORIZED,
+                'error'     => true,
+                'result'    => false ,
+                'message'   => 'Your email address was not found.',
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNAUTHORIZED);
+        }
+        $resetEmail = $getEmail->email;
+        $name       = $getEmail->first_name;
+
+        $verifiedLink =  Mail::send('email.reset',['name' => $name,'resetEmail' => $resetEmail],function($message){
+            $subject  = "Reset Password";
+            $email    = "suraj@yopmail.com";
+            $message->to($email)->subject($subject);
+            $message->from('suraj.nirala1995@gmail.com','surajNirala');
+          });
+
+        $response  = [
+              'status'  => Response::HTTP_OK,
+              'error'   => true,
+              'result'  => false,
+              'message' => "A reset email has been sent! Please check your email.",
+              'data'    => [],  
+            ];
+            return response()->json($response, Response::HTTP_OK);
+
+   } 
+   public function reset_password(Request $request)
+   {
+      $validator = $this->validatorResetPassword($request->all());
+
+        if ($validator->fails()) {
+            $messages = $validator->messages();
+            $response = [
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'error'     => true,
+                'result'    =>false ,
+                'message'   => $messages,
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        $password = bcrypt($request->password);
+        $user = $this->user::where('email','suraj@gmail.com')->update(['password' => $password]);
+        $user  = $this->user::where('email','suraj@gmail.com')->first();
+        $response = [
+                'status'    => Response::HTTP_OK,
+                'error'     => true,
+                'result'    => false ,
+                'message'   => 'your password reset successfully',
+                'data'      => $user,
+            ];
+
+            return response()->json($response,Response::HTTP_OK);
+   }
    public function login(Request $request)
    {
       $validator = $this->validatorLogin($request->all());
@@ -108,7 +254,12 @@ class UserController extends Controller
         if($user = $this->user::where('email',$email)->get())
         {
 
-          $credentials = $request->only('email', 'password');
+        //  $credentials = $request->only('email', 'password');
+          $credentials = [
+            'email'       => $request->email,
+            'password'    => $request->password,
+            'is_verified' => 0
+          ];
           {
          // return $credentials; die;
           $token = null;
