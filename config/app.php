@@ -179,6 +179,7 @@ return [
         Tymon\JWTAuth\Providers\JWTAuthServiceProvider::class,
         Barryvdh\Cors\ServiceProvider::class,
         Stevebauman\Location\LocationServiceProvider::class,
+        Intervention\Image\ImageServiceProvider::class,
 
     ],
 
@@ -231,6 +232,7 @@ return [
         'Input' => Illuminate\Support\Facades\Input::class,
         'JWTAuth' => Tymon\JWTAuth\Facades\JWTAuth::class,
         'Location' => Stevebauman\Location\Facades\Location::class,
+        'Image' => Intervention\Image\Facades\Image::class,
 
     ],
 

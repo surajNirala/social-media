@@ -15,7 +15,7 @@ Trait UserTransformHelper
       //date('d F,Y',strtotime($value->created_at))
       //date('h:i A',strtotime($value->created_at))
 
-      $t1 = strtotime($value->dop); 
+      $t1 = strtotime($value->dob); 
       $t2 = strtotime($value->created_at); 
 
       $diff = $t2 - $t1;
@@ -30,9 +30,9 @@ Trait UserTransformHelper
         'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
         'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
-        'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
-        'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
-        'hours'           => $value->dop                     ? $hours                                            : '',
+        'dob'             => $value->dob                     ? date('(h:i A),d F,Y',strtotime($value->dob))      : '',
+        'Day'             => $value->dob                     ? date('l',strtotime($value->dob))                  : '',
+        'hours'           => $value->dob                     ? $hours                                            : '',
         'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
         'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
         'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
@@ -95,7 +95,7 @@ Trait UserTransformHelper
       //date('d F,Y',strtotime($value->created_at))
       //date('h:i A',strtotime($value->created_at))
 
-      $t1 = strtotime($value->dop); 
+      $t1 = strtotime($value->dob); 
       $t2 = strtotime($value->created_at); 
 
       $diff = $t2 - $t1;
@@ -110,9 +110,9 @@ Trait UserTransformHelper
         'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
         'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
-        'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
-        'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
-        'hours'           => $value->dop                     ? $hours                                            : '',
+        'dob'             => $value->dob                     ? date('(h:i A),d F,Y',strtotime($value->dob))      : '',
+        'Day'             => $value->dob                     ? date('l',strtotime($value->dob))                  : '',
+        'hours'           => $value->dob                     ? $hours                                            : '',
         'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
         'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
         'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
@@ -137,7 +137,7 @@ Trait UserTransformHelper
       //date('d F,Y',strtotime($value->created_at))
       //date('h:i A',strtotime($value->created_at))
 
-      $t1 = strtotime($value->dop); 
+      $t1 = strtotime($value->dob); 
       $t2 = strtotime($value->created_at); 
 
       $diff = $t2 - $t1;
@@ -152,9 +152,9 @@ Trait UserTransformHelper
         'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
         'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
-        'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
-        'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
-        'hours'           => $value->dop                     ? $hours                                            : '',
+        'dob'             => $value->dob                     ? date('(h:i A),d F,Y',strtotime($value->dob))      : '',
+        'Day'             => $value->dob                     ? date('l',strtotime($value->dob))                  : '',
+        'hours'           => $value->dob                     ? $hours                                            : '',
         'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
         'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
         'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
@@ -178,7 +178,7 @@ Trait UserTransformHelper
       //date('d F,Y',strtotime($value->created_at))
       //date('h:i A',strtotime($value->created_at))
 
-      $t1 = strtotime($value->dop); 
+      $t1 = strtotime($value->dob); 
       $t2 = strtotime($value->created_at); 
 
       $diff = $t2 - $t1;
@@ -193,9 +193,9 @@ Trait UserTransformHelper
         'mobile'          => (! empty ($value->profiles))    ? $value->profiles->mobile                          : '',
         'username'        => (! empty ($value->profiles))    ? $value->profiles->username                        : '',
         'email'           => $value->email                   ? $value->email                                     : '',
-        'dop'             => $value->dop                     ? date('(h:i A),d F,Y',strtotime($value->dop))      : '',
-        'Day'             => $value->dop                     ? date('l',strtotime($value->dop))                  : '',
-        'hours'           => $value->dop                     ? $hours                                            : '',
+        'dob'             => $value->dob                     ? date('(h:i A),d F,Y',strtotime($value->dob))      : '',
+        'Day'             => $value->dob                     ? date('l',strtotime($value->dob))                  : '',
+        'hours'           => $value->dob                     ? $hours                                            : '',
         'city'            => (! empty ($value->profiles))    ? $value->profiles->city                            : '',
         'country'         => (! empty ($value->profiles))    ? $value->profiles->country                         : '',
         'profile_image'   => (! empty ($value->profiles))    ? url('social/'.$value->profiles->profile_image)    : '',
@@ -241,11 +241,14 @@ Trait UserTransformHelper
       //Trying to get property 'id' of non-object show error without foreach loop
 	    foreach ($user as $value) {
 	    $tmp = [
-        "id"            => $value->id,
-	      "first_name"    => $value->first_name,
-        "last_name"     => $value->last_name,
-        "email"         => $value->email,
-        "dop"           => $value->dop,
+        "id"            => $value->id              ? $value->id                                            : '',
+	      "first_name"    => $value->first_name      ? $value->first_name                                    : '',
+        "last_name"     => $value->last_name       ? $value->last_name                                     : '',
+        "email"         => $value->email           ? $value->email                                         : '',
+        "dob"           => $value->dob             ? date('(h:i A),d F,Y',strtotime($value->dob))          : '',
+        "created_at"    => $value->created_at      ? $value->updated_at->toDateTimeString()                : '',
+        "updated_at"    => $value->updated_at      ? $value->updated_at->toDateTimeString()                : '',
+        "Last login"    => $value->last_sign_in_at ? $value->last_sign_in_at           : '',
         "token"         => $token,
 	      
 	      ];

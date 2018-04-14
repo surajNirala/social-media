@@ -15,7 +15,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'first_name','last_name','email', 'password','dop','gender','status','role'
+        'first_name','last_name','email', 'password','dob','gender','remember_token','status','role','is_verified','last_sign_in_at'
     ];
     public $timestamps = true;
 
@@ -30,7 +30,15 @@ class User extends Authenticatable
 
     public function profiles()
     {
-        return $this->hasOne('App\Model\Profile','user_id');
+        return $this->hasOne('App\Model\Profile','user_id'); 
+    }
+    public function education()
+    {
+        return $this->hasMany('App\Model\Education','user_id');
+    }
+    public function workexperiences()
+    {
+        return $this->hasMany('App\Model\Workexperience','user_id');
     }
     public function posts()
     {

@@ -20,9 +20,9 @@ $factory->define(App\User::class, function (Faker $faker) {
         'last_name'				=> $faker->lastName,
         'email' 				=> $faker->unique()->freeEmail,
         'password' 				=> bcrypt('secret'),
-        'dop'					=> $faker
+        'dob'					=> $faker
         						   ->dateTimeBetween('-40 years', '-18 years'),
         'gender'                => rand(1, 2),
-        'remember_token' 		=> str_random(10),
+        'remember_token' 		=> str_random(40),
     ];
 });

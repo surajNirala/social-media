@@ -3,20 +3,27 @@
 namespace App\Http\Controllers\v1;
 
 use URL;
+use File;
 use App\User;
 use JWTAuth;
+use Storage;
+use Carbon\Carbon;
 use App\Model\Post;
 use JWTAuthException;
 use App\Model\Profile;
 use App\Http\Requests;
+use App\User_verification;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Input;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
+use Illuminate\Support\Facades\Input;
+use App\Http\Resources\UserinfoResource;
 use App\Http\Helper\userhelper as helper;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\Facades\Image as Image;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Helper\UserTransformHelper as userDetailsTransformer;
+use Mail;
 
 class UserController extends Controller
 {
@@ -25,9 +32,10 @@ class UserController extends Controller
 
     private $user;
 
-    public function __construct(User $user, Post $post){
+    public function __construct(User $user, Post $post,User_verification $user_verification){
         $this->user = $user;
         $this->post = $post;
+        $this->user_verification = $user_verification;
     }
 
     public function register(Request $request)
@@ -46,30 +54,59 @@ class UserController extends Controller
                 ];
                 return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+        $remember_token = str_random(40);
         $save = [
           'first_name' => $request->get('first_name')       ? $request->get('first_name')           : '' ,
           'last_name'  => $request->get('last_name')        ? $request->get('last_name')            : '',
           'email'      => $request->get('email')            ? $request->get('email')                : '',
           'password'   => $request->get('password')         ? bcrypt($request->get('password'))     : '',
-          'dop'        => $request->get('dop')              ? $request->get('dop')                  : '',
-          'gender'     => $request->get('gender') == 'male' ? '1'                                   : '2',  
+          'dob'        => $request->get('dob')              ? $request->get('dob')                  : '',
+          'gender'     => $request->get('gender') == 'male' ? '1'                                   : '2', 
+          'remember_token' => $remember_token , 
         ];
-        
-        if($this->user->create($save)){
+        $name = $request->first_name;
+        $user = $this->user->create($save);
+        $userID = $user->id;
+        //$resendotp  = $user->email;
+         
+        $verification_code = str_random(40);
+         
+        $verifiedLink =  Mail::send('email.verify',['name' => $name, 'verification_code' => $verification_code],function($message){
+            $subject  = "Please verify your email address.";
+            $email    = "suraj@yopmail.com";
+            $message->to($email)->subject($subject);
+            $message->from('suraj.nirala1995@gmail.com','surajNirala');
+          });
+        $verify_token_code = $this->user_verification->create(['user_id' => $userID,'token' => $verification_code]);
+
+          if($user && $verify_token_code){
+
           $user = [
           'first_name' => $request->get('first_name')       ? $request->get('first_name')           : '' ,
           'last_name'  => $request->get('last_name')        ? $request->get('last_name')            : '',
           'email'      => $request->get('email')            ? $request->get('email')                : '',
-          'dop'        => $request->get('dop')              ? $request->get('dop')                  : '',
+          'dob'        => $request->get('dob')              ? $request->get('dob')                  : '',
           'gender'     => $request->get('gender') == 'male' ? 'male'                                : 'female',  
         ];
 
+          $link = [
+
+                //'Link'=>route('verifyUser',$verification_code),
+                'Link'=>URL('api/v1/verify',$verification_code),
+          ];
+          $resendVerificationEmail = [
+
+                'Link'=>URL('api/v1/resend',$userID),
+          ];
+
         $response = [
-            'status'    => Response::HTTP_CREATED,
-            'result'    => true,
-            'error'     => false,
-            'message'   =>'User created successfully',
-            'data'      => $user
+            'status'           => Response::HTTP_CREATED,
+            'result'           => true,
+            'error'            => false,
+            'message'          =>'Thanks for signing up! Please check your email to complete your registration.',
+            'data'             => $user,
+            'Verificaton Link' => $link,
+            'resendOTP'        => $resendVerificationEmail,
         ];
         return response()->json($response,Response::HTTP_CREATED);
 
@@ -83,10 +120,206 @@ class UserController extends Controller
         ];
         return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-       
         
     }
+    // Resend email verification with otp
+    public function resend($resendotp){
+        //return $password;
+          $verification_code = str_random(40);
+         // return $resendotp;
+          $userverification = $this->user_verification::where('user_id','=',$resendotp)->first();
+          if($userverification){
+          $userverification->token = $verification_code;
+          $userverification->save();
+          $resendemail = $this->user::where('id',$resendotp)->first();
+          $name = $resendemail->first_name.' '.$resendemail->last_name;
+          $verifiedLink =  Mail::send('email.verify',['name' => $name, 'verification_code' => $verification_code],function($message){
+            $subject  = "Please verify your email address.";
+            $email    = "riva@yopmail.com";
+            $message->to($email)->subject($subject);
+            $message->from('suraj.nirala1995@gmail.com','surajNirala');
+          });
+          $userverification1 = $this->user_verification::where('user_id',$resendotp)->first();
+          $link = [
 
+                //'Link'=>route('verifyUser',$verification_code),
+                'Link'=>URL('api/v1/verify',$verification_code),
+          ];
+          $response = [
+                'status'           => Response::HTTP_OK,
+                'result'           => true,
+                'error'            => false,
+                'message'          => 'resend email verification successfully.', 
+                'data'             => $userverification1,  
+                'Verificaton Link' => $link,
+          ]; 
+          return response()->json($response,Response::HTTP_OK);
+          }else{
+             $response = [
+                'status'     =>  Response::HTTP_INTERNAL_SERVER_ERROR,
+                'result'     =>  true,
+                'error'      =>  false,
+                'message'    =>  'email is not found.', 
+                'data'       =>  [],  
+          ]; 
+          return response()->json($response,Response::HTTP_INTERNAL_SERVER_ERROR);
+          }
+
+    }
+    // email verified by user
+    public function verifyUser($verifyUser){
+
+      $check = $this->user_verification::where('token',$verifyUser)->first();
+
+      if(!is_null($check)){
+
+        $user = $this->user::find($check->user_id);
+
+         if($user->is_verified == 1){
+            $response = [
+            'status'    => Response::HTTP_BAD_REQUEST,
+            'result'    => true,
+            'error'     => false,
+            'message'   =>'Account already verified..',
+            'data'      => []
+        ];
+         return response()->json($response,Response::HTTP_BAD_REQUEST);
+        }
+
+        $user->update(['is_verified' => 1]);
+
+        $this->user_verification::where('token',$verifyUser)->delete();
+
+        $response = [
+          'status'   =>  Response::HTTP_OK,
+          'result'   =>  true,
+          'error'    =>  false,
+          'message'  =>  'You have successfully verified your email address.',
+        ];
+        return response()->json($response,Response::HTTP_OK);
+      }else{
+
+        $response = [
+          'status'   =>  Response::HTTP_BAD_REQUEST,
+          'result'   =>  true,
+          'error'    =>  false,
+          'message'  =>  'Verification code is invalid.',
+        ];
+        return response()->json($response,Response::HTTP_BAD_REQUEST);
+      }
+    }
+    // Recove password if forgotten password of user
+   public function recover(Request $request){
+
+    $validator = $this->validatorRecover($request->all()); 
+
+        if ($validator->fails()) {
+            $messages = $validator->messages();
+            $response = [
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'error'     => true,
+                'result'    =>false ,
+                'message'   => $messages,
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $email = $request->email;
+
+        $getEmail = $this->user::where('email',$email)->first();
+
+        if(!$getEmail){
+             $response = [
+                'status'    => Response::HTTP_UNAUTHORIZED,
+                'error'     => true,
+                'result'    => false ,
+                'message'   => 'Your email address was not found.',
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNAUTHORIZED);
+        }
+        $resetEmail     = $getEmail->email;
+
+        $name           = $getEmail->first_name;
+
+        $remember_token = $getEmail->remember_token;
+
+        $verifiedLink =  Mail::send('email.reset',['name' => $name,'resetEmail' => $resetEmail],function($message){
+            $subject  = "Reset Password";
+            $email    = "suraj@yopmail.com";
+            $message->to($email)->subject($subject);
+            $message->from('suraj.nirala1995@gmail.com','surajNirala');
+          });
+
+            $link = [
+
+                        //'Link'=>route('verifyUser',$verification_code),
+                        'Link'=>URL('api/v1/resetpassword',$remember_token),
+                  ];
+
+        $response  = [
+              'status'  => Response::HTTP_OK,
+              'error'   => true,
+              'result'  => false,
+              'message' => "A reset email has been sent! Please check your Email.",
+              'Verificaton Link' => $link,  
+            ];
+            return response()->json($response, Response::HTTP_OK);
+
+   }
+   //forgotten password change by user  
+   public function reset_password(Request $request,$remember_token)
+   {
+      $validator = $this->validatorResetPassword($request->all());
+
+        if ($validator->fails()) {
+            $messages = $validator->messages();
+            $response = [
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'error'     => true,
+                'result'    =>false ,
+                'message'   => $messages,
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        $password = bcrypt($request->password);
+
+        //$remember_token = $this->user::where('remember_token',$remember_token)->first();
+
+        if($remember_token){
+
+        $getupdatePassword = $this->user::where('remember_token',$remember_token)->update(['password' => $password]);
+
+        $user  = $this->user::where('remember_token',$remember_token)->first();
+        $response = [
+                'status'    => Response::HTTP_OK,
+                'error'     => true,
+                'result'    => false ,
+                'message'   => 'Your password reset successfully',
+                'data'      => $user,
+            ];
+
+            return response()->json($response,Response::HTTP_OK);
+        }else{
+          //$user  = $this->user::where('email',$email)->first();
+          $response = [
+                'status'    => Response::HTTP_OK,
+                'error'     => true,
+                'result'    => false ,
+                'message'   => 'Your email address was not found.',
+                'data'      => [],
+            ];
+
+            return response()->json($response,Response::HTTP_OK);
+        }
+        
+   }
+   // user login by email and  password
    public function login(Request $request)
    {
       $validator = $this->validatorLogin($request->all());
@@ -107,8 +340,17 @@ class UserController extends Controller
 
         if($user = $this->user::where('email',$email)->get())
         {
+          $lastlogin = ['last_sign_in_at'=>Carbon::now()];
+          $this->user::where('email',$email)->update($lastlogin);
+          /*$user->last_sign_in_at = Carbon::now();
+          $user->save();*/
 
-          $credentials = $request->only('email', 'password');
+        //  $credentials = $request->only('email', 'password');
+          $credentials = [
+            'email'       => $request->email,
+            'password'    => $request->password,
+            //  'is_verified' => 0
+          ];
           {
          // return $credentials; die;
           $token = null;
@@ -143,6 +385,7 @@ class UserController extends Controller
           }
         }
     }
+    // user logout 
    public function logout(Request $request) {
 
     $token =  $request->header('token');
@@ -282,6 +525,74 @@ class UserController extends Controller
         }
 
     }
+    // Autheried or loggedin  user infomation
+    public function user_info(Request $request)
+    {
+      $user_id =  (JWTAuth::touser($request->header('token')))->id;
+
+      $userInfo = $this->user::where('id',$user_id)
+                                 ->with('profiles')
+                                 ->with('education')
+                                 ->with('workexperiences')
+                                 ->get();
+
+      $userInfoDetail = UserinfoResource::collection($userInfo);
+
+      $response = [
+          'status'      => Response::HTTP_OK,
+          'error'       => false,
+          'result'      => true,
+          'message'     => "Logged in User information.",
+          'data'        => $userInfoDetail,
+      ];
+      return response()->json($response,Response::HTTP_OK);
+    }
+    public function change_password(Request $request)
+    {
+      $validator = $this->validatorChangePassword($request->all());
+
+        if ($validator->fails()){
+            $messages = $validator->messages();
+            $response = [
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'error'     => true,
+                'result'    =>false ,
+                'message'   => $messages,
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+      $user_id =  (JWTAuth::touser($request->header('token')))->id;
+      $email = (JWTAuth::touser($request->header('token')))->email;
+      $newpassword = bcrypt($request->password);
+        //return $email.' '.$oldpassword;
+        $credentials = [
+            'email'       => $email,
+            'password'    => $request->oldpassword,
+            //  'is_verified' => 0
+          ];
+          if(JWTAuth::attempt($credentials)){
+
+            $changepassword = $this->user->where('id',$user_id)
+                                 ->update(['password' => $newpassword]);
+            return response()->json([
+                       "status"    => Response::HTTP_OK,
+                       "result"    => true,
+                       "error"     => false,
+                       "msg"       => "Your Password changed successfully.",
+            ],Response::HTTP_OK);
+          }else{
+             $response = [
+                  'status'    => Response::HTTP_UNAUTHORIZED,
+                  'error'     => true,
+                  'result'    =>false ,
+                  'message'   => 'Invalid old password',
+                  'data'      => []
+                  ];
+              return response()->json($response, Response::HTTP_UNAUTHORIZED);
+          }
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -320,7 +631,7 @@ class UserController extends Controller
         return "this is store data";
     }
 
-    /**
+    /** 
      * Display the specified resource.
      *
      * @param  int  $id
@@ -332,8 +643,8 @@ class UserController extends Controller
         $user             = JWTAuth::toUser($token);
         $user_id          = $user->id;
         $userdetail       = $this->user::where('id',$id)
-                            ->where('id',$user_id)
-                                         ->get();
+                                  ->where('id',$user_id)
+                                                 ->get();
         $singleUserdetail = $this->withoutPostandAddfrienduserDetailTransformer($userdetail); 
         if($userdetail->isEmpty()){
             $response = [
@@ -353,9 +664,7 @@ class UserController extends Controller
               'data'       => $singleUserdetail, 
             ];
             return response()->json($response,Response::HTTP_OK);
-          }                                
-        
-        
+          }        
     }
 
     /**
@@ -440,6 +749,47 @@ class UserController extends Controller
 
     public function profilepic(Request $request)
     {
-        return "image here..";
+      $validator = $this->validatorImage($request->all());
+
+        if ($validator->fails()){
+            $messages = $validator->messages();
+            $response = [
+                'status'    => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'error'     => true,
+                'result'    =>false ,
+                'message'   => $messages,
+                'data'      => []
+            ];
+
+            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $token = $request->header('token');
+        $user = JWTAuth::toUser($token);
+        if($request->hasFile('image')){
+          $file  = $request->file('image');
+          $path = 'public/profile_images/';
+          $mime = $file->getClientMimeType();
+          $fileExtension =  $file->getClientOriginalExtension();
+         $dir =  Storage::exists($path) or Storage::makeDirectory($path);
+          return $dir;
+          File::exists(public_path().'/'.$path,0777,true) or File::makeDirectory(public_path().'/'.$path,0777,true);
+
+          $fileName = md5($file->getClientOriginalName()).'.'.$fileExtension;
+
+          $saveimage = 'public/' . $path . $fileName;
+
+         // $image->move($path,$fileName);
+
+         // $product->product_image = $fileName ;
+
+          return $mime;
+         /*
+        $imageName =  $fileName;
+
+        $file->move($destinationPath,$fileName);
+            $product->product_image = $fileName ;
+*/
+      } 
     }
 }

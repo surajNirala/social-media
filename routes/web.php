@@ -14,3 +14,6 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('emailSend','mailController@send');
+Route::get('verify/{verification_code}', 'v1\UserController@verifyUser');
